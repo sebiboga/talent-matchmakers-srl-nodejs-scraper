@@ -1,4 +1,4 @@
-name: Add Company to Company Core
+name: Add Talent to Company Core
 
 on:
   workflow_dispatch:
