@@ -9,6 +9,7 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
       SOLR_AUTH: ${{ secrets.SOLR_AUTH }}
     steps:
       - name: Checkout code
@@ -24,6 +25,8 @@ jobs:
 
       - name: Run scraper
         run: npm run scrape
+        env:
+          SOLR_AUTH: ${{ secrets.SOLR_AUTH }}
 
       - name: Upload jobs output
         uses: actions/upload-artifact@v4
