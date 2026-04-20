@@ -1,0 +1,40 @@
+name: Scrape Jobs
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    env:
+      SOLR_AUTH: ${{ secrets.SOLR_AUTH }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run scraper
+        run: npm run scrape -- --test
+
+      - name: Upload jobs output
+        uses: actions/upload-artifact@v4
+        with:
+          name: jobs-output
+          path: jobs.json
+          retention-days: 7
+
+      - name: Upload company output
+        uses: actions/upload-artifact@v4
+        with:
+          name: company-output
+          path: company.json
+          retention-days: 7

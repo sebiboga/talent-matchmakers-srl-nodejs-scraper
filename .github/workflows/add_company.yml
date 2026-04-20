@@ -1,0 +1,69 @@
+name: Add Company to Company Core
+
+on:
+  workflow_dispatch:
+
+jobs:
+  add-company:
+    runs-on: ubuntu-latest
+    env:
+      SOLR_AUTH: ${{ secrets.SOLR_AUTH }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate and get company
+        run: |
+          node company.js
+        env:
+          SOLR_AUTH: ${{ secrets.SOLR_AUTH }}
+
+      - name: Check if company already exists
+        id: check
+        run: |
+          EXISTS=$(curl -s --user "${SOLR_AUTH}" \
+            "https://solr.peviitor.ro/solr/company/select?q=id:38460545&rows=1" | jq '.response.numFound')
+          
+          if [ "$EXISTS" -eq "0" ]; then
+            echo "exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "exists=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Add company to company core
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          echo "Adding company to company core..."
+          
+          if [ -f "company_core.json" ]; then
+            curl -s --user "${SOLR_AUTH}" \
+              "https://solr.peviitor.ro/solr/company/update/json?commit=true" \
+              -X POST \
+              -H "Content-Type: application/json" \
+              --data-binary @company_core.json
+            
+            echo "✅ Company added to company core"
+          else
+            echo "⚠️ company_core.json not found - please run 'node company.js' first"
+            exit 1
+          fi
+
+      - name: Verify company in core
+        run: |
+          RESULT=$(curl -s --user "${SOLR_AUTH}" \
+            "https://solr.peviitor.ro/solr/company/select?q=id:38460545&rows=1" | jq '.response.numFound')
+          
+          if [ "$RESULT" -ge "1" ]; then
+            echo "✅ SUCCESS: Company is in company core"
+          else
+            echo "❌ FAILED: Company not found in company core"
+            exit 1
+          fi
