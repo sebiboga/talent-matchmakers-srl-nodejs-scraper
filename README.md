@@ -1,6 +1,6 @@
 # Talent Matchmakers Scraper
 
-[![License: Copyright (c) 2026 BOGA SEBASTIAN-NICOLAE)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 Automation project for scraping job data from Talent Matchmakers careers page and importing to [peviitor.ro](https://peviitor.ro).
