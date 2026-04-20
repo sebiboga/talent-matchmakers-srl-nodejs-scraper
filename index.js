@@ -1,4 +1,5 @@
 import fetch from "node-fetch";
+import * as cheerio from "cheerio";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { validateAndGetCompany } from "./company.js";
@@ -32,41 +33,43 @@ async function fetchJobsPage() {
 }
 
 function parseJobs(html) {
+  const $ = cheerio.load(html);
   const jobs = [];
   
-  const jobLinkRegex = /<a[^>]*href="([^"]*\/jobs\/[^"]*)"[^>]*>/g;
-  let match;
-  
-  while ((match = jobLinkRegex.exec(html)) !== null) {
-    const url = match[1].startsWith('http') ? match[1] : `${JOB_BASE}${match[1]}`;
+  $('#jobs_list_container > li').each((i, el) => {
+    const linkEl = $(el).find('a[data-turbo="false"]');
+    const url = linkEl.attr('href');
     
-    if (url && !jobs.find(j => j.url === url)) {
-      jobs.push({ url, title: '' });
-    }
-  }
-  
-  return jobs;
-}
-
-function extractJobDetails(html) {
-  const jobs = [];
-  
-  const jobLinkRegex = /<a[^>]*href="(\/jobs\/[^"]+)"[^>]*>/g;
-  let match;
-  
-  while ((match = jobLinkRegex.exec(html)) !== null) {
-    const path = match[1];
-    const url = `${JOB_BASE}${path}`;
+    if (!url) return;
     
-    if (url && !jobs.find(j => j.url === url)) {
-      jobs.push({
-        url,
-        title: '',
-        location: [],
-        workmode: 'hybrid'
-      });
+    const title = linkEl.text().trim();
+    
+    const spans = $(el).find('span.text-base > span').map((j, span) => $(span).text().trim()).get();
+    
+    let location = [];
+    let workmode = 'hybrid';
+    
+    for (const span of spans) {
+      if (span === 'Fully Remote') {
+        workmode = 'remote';
+      } else if (span === 'Hybrid') {
+        workmode = 'hybrid';
+      } else if (span !== 'Software Engineering' && span !== '·') {
+        location.push(span);
+      }
     }
-  }
+    
+    if (location.length === 0) {
+      location = ['România'];
+    }
+    
+    jobs.push({
+      url,
+      title,
+      location,
+      workmode
+    });
+  });
   
   return jobs;
 }
@@ -77,14 +80,7 @@ async function scrapeAllListings(testMode = false) {
   
   console.log(`HTML received: ${html.length} chars`);
   
-  const jobs = extractJobDetails(html);
-  
-  if (jobs.length === 0) {
-    console.log("Trying alternative parsing...");
-    const altJobs = parseJobs(html);
-    console.log(`Found ${altJobs.length} jobs from alternative parsing`);
-    return altJobs;
-  }
+  const jobs = parseJobs(html);
   
   console.log(`Found ${jobs.length} jobs`);
   return jobs;
@@ -212,7 +208,7 @@ async function main() {
   }
 }
 
-export { parseJobs, mapToJobModel, transformJobsForSOLR, extractJobDetails };
+export { parseJobs, mapToJobModel, transformJobsForSOLR };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main();
