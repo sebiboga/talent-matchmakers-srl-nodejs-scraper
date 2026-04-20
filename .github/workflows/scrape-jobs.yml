@@ -1,4 +1,4 @@
-name: Scrape Jobs
+name: Scrape Talent Matchmakers Jobs
 
 on:
   workflow_dispatch:
