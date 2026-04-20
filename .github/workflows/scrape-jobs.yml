@@ -23,7 +23,7 @@ jobs:
         run: npm install
 
       - name: Run scraper
-        run: npm run scrape -- --test
+        run: npm run scrape
 
       - name: Upload jobs output
         uses: actions/upload-artifact@v4
